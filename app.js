@@ -8,28 +8,31 @@ const translate = new Translate({ projectId });
 const sourceFile = fs.readFileSync('./en.json', console.log);
 const source = JSON.parse(sourceFile);
 
-const to = 'es';
+const target = ['es', 'de', 'fr'];
 
-const translateObject = async obj => {
+const translateObject = async (obj, to) => {
     const res = {};
     for (const key in obj) {
         if (typeof obj[key] === 'object') {
-            res[key] = await translateObject(obj[key]);
+            res[key] = await translateObject(obj[key], to);
         } else {
             const [translation] = await translate.translate(obj[key], {
                 from: 'en',
                 to,
             });
             res[key] = translation;
-            console.log(`${obj[key]} => ${translation}`);
+            console.log(`${obj[key]} => ${translation} (lang: ${to})`);
         }
     }
     return res;
 };
 
 const run = async () => {
-    const out = await translateObject(source);
-    fs.writeFileSync(`./${to}.json`, JSON.stringify(out));
+    const promises = target.map(async to => {
+        const out = await translateObject(source, to);
+        fs.writeFile(`./${to}.json`, JSON.stringify(out), console.log);
+    });
+    Promise.all(promises);
 };
 
 run();
